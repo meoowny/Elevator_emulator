@@ -14,13 +14,14 @@ public:
 
 public slots:
   // 用于决定将新任务分配给哪个电梯
-  void newTarget(int floor, MyButton::Direction dir);
+  void newTarget(int floor, ElevatorButton::Direction dir);
 
 private:
   int total_floor;
   int total_elevator;
+
   Elevator **elevators;
-  MyButton **buttons;
+  ElevatorButton **buttons;
   QLabel **labels;
 
   void setupUi();

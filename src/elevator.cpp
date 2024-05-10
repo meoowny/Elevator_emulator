@@ -1,6 +1,11 @@
 #include "elevator.h"
+#include "qobject.h"
 
 using namespace std::chrono_literals;
+
+/**********************
+ * 构造函数与析构函数 *
+ **********************/
 
 Elevator::Elevator(QWidget *parent, int floor, int id)
   : QWidget(parent)
@@ -11,7 +16,7 @@ Elevator::Elevator(QWidget *parent, int floor, int id)
   , id(id)
   , work_semaphore(Semaphore(1))
   , door_semaphore(Semaphore(1))
-  , direction(MyButton::TARGET)
+  , direction(ElevatorButton::TARGET)
 {
   setupUi();
   setAttribute(Qt::WA_DeleteOnClose);
@@ -30,24 +35,45 @@ Elevator::~Elevator()
   delete board_line;
 }
 
-void Elevator::on_OpenDoor_clicked()
+/**********
+ * 槽函数 *
+ **********/
+
+void Elevator::onNewTarget(int floor)
 {
   if (state == BROKEN)
     return;
-  std::thread t(&Elevator::openDoor, this);
-  t.detach();
+  // TODO: 单电梯调度
+  buttons[floor - 1]->lightupOnly();
+  std::thread(&Elevator::moveTo, this, floor)
+    .detach();
+}
+
+void Elevator::on_OpenDoor_clicked()
+{
+  if (state == BROKEN or state != WAITING)
+    return;
+  std::thread(&Elevator::openDoor, this)
+    .detach();
 }
 
 void Elevator::on_CloseDoor_clicked()
 {
-  if (state == BROKEN)
+  if (state == BROKEN or state != OPENED)
     return;
   door_mutex.unlock();
 }
 
 void Elevator::on_AlarmButton_clicked()
 {
-  onStateChange(ALARM);
+  if (state == BROKEN) {
+    state = WAITING;
+    stateLabel->setStyleSheet("background: grey;");
+  }
+  else {
+    state = BROKEN;
+    stateLabel->setStyleSheet("background: red;");
+  }
 }
 
 void Elevator::onStateChange(TaskState st)
@@ -76,14 +102,6 @@ void Elevator::onStateChange(TaskState st)
     state = WAITING;
     stateLabel->setStyleSheet("background: grey;");
   }
-  else if (st == ALARM and state != BROKEN) {
-    state = BROKEN;
-    stateLabel->setStyleSheet("background: red;");
-  }
-  else if (st == ALARM and state == BROKEN) {
-    state = WAITING;
-    stateLabel->setStyleSheet("background: grey;");
-  }
   else if (state == BROKEN) {
   }
   else {
@@ -91,26 +109,54 @@ void Elevator::onStateChange(TaskState st)
   }
 }
 
-void Elevator::onNewTarget(int floor)
+/******************************
+ * 私有函数，用于实现电梯逻辑 *
+ ******************************/
+
+void Elevator::moveTo(int floor)
 {
-  if (state == BROKEN)
-    return;
-  std::thread t1(&Elevator::moveTo, this, floor);
-  t1.detach();
+  work_semaphore.wait();
+  door_semaphore.wait();
+
+  emit changeState(START);
+  bool isUp = floor > current_floor;
+  direction = isUp ? ElevatorButton::UP : ElevatorButton::DOWN;
+  for (int i = current_floor; isUp and i < floor or not isUp and i > floor;) {
+    if (state == BROKEN) {
+      door_semaphore.signal();
+      work_semaphore.signal();
+      return;
+    }
+    step(isUp);
+    i += isUp ? 1 : -1;
+  }
+  direction = ElevatorButton::TARGET;
+  emit changeState(END);
+
+  emit arrive(floor);
+
+  emit changeState(OPEN);
+  waitPassenger();
+  emit changeState(CLOSE);
+
+  door_semaphore.signal();
+  work_semaphore.signal();
 }
 
 void Elevator::step(bool isUp)
 {
-  std::this_thread::sleep_for(1s);
+  // 休眠 0.7 秒模拟电梯在楼层间的移动
+  std::this_thread::sleep_for(0.7s);
   if (isUp)
     current_floor++;
   else
     current_floor--;
-  emit newFloor(current_floor);
+  lcdNumber->display(current_floor);
 }
 
 void Elevator::waitPassenger()
 {
+  // 若中途收到关门指令，则结束阻塞状态，否则阻塞两秒作为等待
   if (door_mutex.try_lock_for(2s))
     return;
 }
@@ -124,33 +170,9 @@ void Elevator::openDoor()
   door_semaphore.signal();
 }
 
-void Elevator::moveTo(int floor)
-{
-  work_semaphore.wait();
-  door_semaphore.wait();
-
-  emit changeState(START);
-  bool isUp = floor > current_floor;
-  direction = isUp ? MyButton::UP : MyButton::DOWN;
-  for (int i = current_floor; isUp and i < floor or not isUp and i > floor;) {
-    step(isUp);
-    i += isUp ? 1 : -1;
-    if (state == BROKEN) {
-      door_semaphore.signal();
-      work_semaphore.signal();
-      return;
-    }
-  }
-  direction = MyButton::TARGET;
-  emit changeState(END);
-
-  emit changeState(OPEN);
-  waitPassenger();
-  emit changeState(CLOSE);
-
-  door_semaphore.signal();
-  work_semaphore.signal();
-}
+/***********************
+ * UI 设置与信号槽绑定 *
+ ***********************/
 
 void Elevator::setupUi()
 {
@@ -158,12 +180,15 @@ void Elevator::setupUi()
     setObjectName("Elevator" + std::to_string(id));
   this->resize(135, (total_floor / 2 + 4) * 30 - 5);
 
-  buttons = new MyButton* [total_floor];
+  buttons = new ElevatorButton* [total_floor];
   for (int i = 0; i < total_floor; i++) {
-    buttons[i] = new MyButton(this, i + 1);
+    buttons[i] = new ElevatorButton(this, i + 1);
     buttons[i]->setObjectName("Button" + std::to_string(i));
     buttons[i]->setGeometry(QRect(i % 2 * 65 + 5, (i + 2) / 2 * 30 + 5, 60, 25));
-    buttons[i]->setText(QCoreApplication::translate(objectName().toStdString().c_str(), std::to_string(i + 1).c_str(), nullptr));
+    buttons[i]->setText(QCoreApplication::translate(
+      objectName().toStdString().c_str(),
+      std::to_string(i + 1).c_str(),
+      nullptr));
   }
 
   board_line = new QFrame(this);
@@ -203,9 +228,9 @@ void Elevator::setupUi()
 
   void(QLCDNumber::*display)(int) = &QLCDNumber::display;
   for (int i = 0; i < total_floor; i++) {
-    QObject::connect(buttons[i], &MyButton::newTarget, this, &Elevator::onNewTarget);
+    QObject::connect(buttons[i], &ElevatorButton::newTarget, this, &Elevator::onNewTarget);
+    QObject::connect(this, &Elevator::arrive, buttons[i], &ElevatorButton::onArrive);
   }
   QObject::connect(this, &Elevator::changeState, this, &Elevator::onStateChange);
-  QObject::connect(this, &Elevator::newFloor, lcdNumber, display);
   QMetaObject::connectSlotsByName(this);
 }

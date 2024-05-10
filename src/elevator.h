@@ -6,9 +6,8 @@
 #include <QLCDNumber>
 #include <QLabel>
 #include <thread>
-#include <atomic>
 #include <string>
-#include "MyButton.h"
+#include "elevatorbutton.h"
 #include "Semaphore.h"
 
 class Elevator : public QWidget
@@ -16,17 +15,21 @@ class Elevator : public QWidget
   Q_OBJECT;
 
 public:
+  // 用于标识电梯状态，电梯开门时为 OPENED，报修时为 BROKEN，关门空闲时 为 WAITING，关门在楼层间移动时为 WAITING
+  enum State { RUNNING, WAITING, OPENED, BROKEN };
+  enum TaskState { START, END, OPEN, CLOSE };
+
   explicit Elevator(QWidget *parent = 0, int floor = 20, int id = 0);
   ~Elevator();
 
-  enum State { RUNNING, WAITING, OPENED, BROKEN };
-  enum TaskState { START, END, OPEN, CLOSE, ALARM };
+  int getCurrentFloor() const { return current_floor; }
+  ElevatorButton::Direction getDirections() const { return direction; }
+  State getState() const { return state; }
 
   signals:
-  void opened();
-  void finished(int floor);
+  // 该信号槽用于线程间沟通
   void changeState(TaskState state);
-  void newFloor(int floor);
+  void arrive(int floor);
 
 public slots:
   void onNewTarget(int floor);
@@ -41,7 +44,7 @@ private:
   const int total_floor;
   std::atomic<int> current_floor;
   std::atomic<int> waiting_target;
-  std::atomic<MyButton::Direction> direction;
+  std::atomic<ElevatorButton::Direction> direction;
 
   Semaphore work_semaphore;
   Semaphore door_semaphore;
@@ -56,7 +59,7 @@ private:
   void step(bool isUp);
   void waitPassenger();
 
-  MyButton **buttons;
+  ElevatorButton **buttons;
   QPushButton *open_door_button;
   QPushButton *close_door_button;
   QPushButton *alarm_button;

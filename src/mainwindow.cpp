@@ -2,18 +2,18 @@
 #include "ui_mainwindow.h"
 #include "controller.h"
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent),
-    ui(new Ui::MainWindow)
+MainWindow::MainWindow(QWidget *parent)
+  : QMainWindow(parent)
+  , ui(new Ui::MainWindow)
 {
-    ui->setupUi(this);
+  ui->setupUi(this);
   QObject::connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::onRun);
 }
 
 void MainWindow::onRun()
 {
-  int floor = ui->spinBox_2->value();
-  int elevator = ui->spinBox->value();
+  int floor = ui->floorSpinBox->value();
+  int elevator = ui->elevatorSpinBox->value();
   Controller *c = new Controller(nullptr, floor, elevator);
   c->show();
   this->close();
@@ -21,5 +21,5 @@ void MainWindow::onRun()
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+  delete ui;
 }

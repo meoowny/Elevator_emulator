@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <widget class="QSpinBox" name="spinBox">
+   <widget class="QSpinBox" name="elevatorSpinBox">
     <property name="geometry">
      <rect>
       <x>40</x>
@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="suffix">
-     <string> 部电梯 </string>
+     <string> 部电梯</string>
     </property>
     <property name="prefix">
      <string>共有 </string>
@@ -39,7 +39,7 @@
      <number>5</number>
     </property>
    </widget>
-   <widget class="QSpinBox" name="spinBox_2">
+   <widget class="QSpinBox" name="floorSpinBox">
     <property name="geometry">
      <rect>
       <x>40</x>

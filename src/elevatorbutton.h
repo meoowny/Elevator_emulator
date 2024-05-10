@@ -2,22 +2,21 @@
 #define MY_BUTTON_H
 
 #include <QPushButton>
-#include <QThread>
-#include <thread>
 
-class MyButton : public QPushButton
+class ElevatorButton : public QPushButton
 {
   Q_OBJECT;
 
 public:
   enum Direction { UP, DOWN, TARGET };
 
-  explicit MyButton(QWidget *parent = 0, int l = 1, Direction d = TARGET)
+  explicit ElevatorButton(QWidget *parent = 0, int l = 1, Direction d = TARGET)
     : QPushButton(parent)
     , floor(l)
     , dir(d)
+    , waiting(false)
   {
-    connect(this, &QPushButton::clicked, this, &MyButton::onClick);
+    connect(this, &QPushButton::clicked, this, &ElevatorButton::onClick);
     setStyleSheet(QString("\
       QPushButton {\
         background-color: lightblue;\
@@ -33,12 +32,28 @@ public:
 public slots:
   void onClick()
   {
+    lightupOnly();
     emit newTarget(floor);
+  }
+
+  void onArrive(int f)
+  {
+    if (f != floor)
+      return;
+    waiting = false;
+    setStyleSheet("background-color: lightblue;");
+  }
+
+  void lightupOnly()
+  {
+    waiting = true;
+    setStyleSheet("background-color: #4ad;");
   }
 
 private:
   int floor;
   Direction dir;
+  bool waiting;
 };
 
 #endif // MY_BUTTON_H
