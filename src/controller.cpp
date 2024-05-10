@@ -41,7 +41,7 @@ void Controller::setupUi()
     buttons[i] = new MyButton(this, i + 1, i % 2 ? MyButton::UP : MyButton::DOWN);
     buttons[i]->setObjectName("Button" + std::to_string(i / 2) + (i % 2 ? "UP" : "DOWN"));
     buttons[i]->setGeometry(QRect(base_x + i % 4 * (30 + 20) - (i / 2 % 2) * 10, i / 4 * (25 + 10) + 5, 30, 25));
-    buttons[i]->setText(i % 2 ? "+" : "-");
+    buttons[i]->setText(i % 2 ? "/\\" : "\\/");
   }
 
   labels = new QLabel* [total_floor];

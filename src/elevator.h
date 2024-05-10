@@ -6,9 +6,11 @@
 #include <QLCDNumber>
 #include <QLabel>
 #include <thread>
+#include <atomic>
 #include <string>
 #include <vector>
 #include "MyButton.h"
+#include "Semaphore.h"
 
 class Elevator : public QWidget
 {
@@ -18,8 +20,8 @@ public:
   explicit Elevator(QWidget *parent = 0, int floor = 20, int id = 0);
   ~Elevator();
 
-  enum State { RUNNING, WAITING, OPENED, BROKEN };
-  enum TaskState { START, END };
+  enum State { RUNNING, WAITING, OPENED, BROKEN, SPARE };
+  enum TaskState { START, END, OPEN, CLOSE };
 
   signals:
   void opened();
@@ -29,15 +31,18 @@ public:
 
 public slots:
   void onNewTarget(int floor);
-  void on_CloseButton_clicked()
+  void on_OpenDoor_clicked()
   {
-    close();
+    // TODO: 优先级调整
+    std::thread t(&Elevator::openDoor, this);
+    t.detach();
   }
   void onStateChange(TaskState st);
 
 private:
   MyButton **buttons;
-  QPushButton *close_button;
+  QPushButton *open_door_button;
+  QPushButton *close_door_button;
   QLCDNumber *lcdNumber;
   QLabel *stateLabel;
   QFrame *board_line;
@@ -49,9 +54,15 @@ private:
   int waiting_target;
   // std::vector<int> target_floors;
 
+  Semaphore work_semaphore;
+  Semaphore door_semaphore;
+
   void setupUi();
 
-  void sleep(int n);
+  void moveTo(int n);
+  void openDoor();
+  void step(bool isUp);
+  void waitPassenger();
 };
 
 #endif // ELEVATOR_H
