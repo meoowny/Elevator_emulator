@@ -6,14 +6,16 @@ Elevator::Elevator(QWidget *parent, int floor, int id)
   : QWidget(parent)
   , total_floor(floor)
   , current_floor(1)
-  , state(SPARE)
+  , state(WAITING)
   , waiting_target(0)
   , id(id)
   , work_semaphore(Semaphore(1))
   , door_semaphore(Semaphore(1))
+  , direction(MyButton::TARGET)
 {
   setupUi();
   setAttribute(Qt::WA_DeleteOnClose);
+  door_mutex.lock();
 }
 
 Elevator::~Elevator()
@@ -22,36 +24,67 @@ Elevator::~Elevator()
     delete buttons[i];
   delete[] buttons;
   delete open_door_button;
+  delete alarm_button;
   delete lcdNumber;
   delete stateLabel;
   delete board_line;
 }
 
+void Elevator::on_OpenDoor_clicked()
+{
+  if (state == BROKEN)
+    return;
+  std::thread t(&Elevator::openDoor, this);
+  t.detach();
+}
+
+void Elevator::on_CloseDoor_clicked()
+{
+  if (state == BROKEN)
+    return;
+  door_mutex.unlock();
+}
+
+void Elevator::on_AlarmButton_clicked()
+{
+  onStateChange(ALARM);
+}
+
 void Elevator::onStateChange(TaskState st)
 {
-  if (st == START and state == SPARE) {
+  if (st == START and state == WAITING) {
     state = RUNNING;
-    stateLabel->setStyleSheet("background: red;");
+    stateLabel->setStyleSheet("background: orange;");
   }
   else if (st == START and state == RUNNING) {
     waiting_target++;
   }
   else if (st == END and state == RUNNING) {
     if (waiting_target == 0) {
-      state = SPARE;
+      state = WAITING;
       stateLabel->setStyleSheet("background: grey;");
     }
     else {
       waiting_target--;
     }
   }
-  else if (st == OPEN and state == SPARE) {
-    state = WAITING;
+  else if (st == OPEN and state == WAITING) {
+    state = OPENED;
     stateLabel->setStyleSheet("background: green;");
   }
-  else if (st == CLOSE and state == WAITING) {
-    state = SPARE;
+  else if (st == CLOSE and state == OPENED) {
+    state = WAITING;
     stateLabel->setStyleSheet("background: grey;");
+  }
+  else if (st == ALARM and state != BROKEN) {
+    state = BROKEN;
+    stateLabel->setStyleSheet("background: red;");
+  }
+  else if (st == ALARM and state == BROKEN) {
+    state = WAITING;
+    stateLabel->setStyleSheet("background: grey;");
+  }
+  else if (state == BROKEN) {
   }
   else {
     throw "Expected branch";
@@ -60,6 +93,8 @@ void Elevator::onStateChange(TaskState st)
 
 void Elevator::onNewTarget(int floor)
 {
+  if (state == BROKEN)
+    return;
   std::thread t1(&Elevator::moveTo, this, floor);
   t1.detach();
 }
@@ -76,7 +111,8 @@ void Elevator::step(bool isUp)
 
 void Elevator::waitPassenger()
 {
-  std::this_thread::sleep_for(2s);
+  if (door_mutex.try_lock_for(2s))
+    return;
 }
 
 void Elevator::openDoor()
@@ -90,31 +126,30 @@ void Elevator::openDoor()
 
 void Elevator::moveTo(int floor)
 {
-  // WIP: 初步解决，但开门键的响应存在延迟
   work_semaphore.wait();
-  // work_count++;
-  // // if (work_count == 1)
-    door_semaphore.wait();
-  // work_semaphore.signal();
+  door_semaphore.wait();
 
   emit changeState(START);
   bool isUp = floor > current_floor;
+  direction = isUp ? MyButton::UP : MyButton::DOWN;
   for (int i = current_floor; isUp and i < floor or not isUp and i > floor;) {
     step(isUp);
     i += isUp ? 1 : -1;
+    if (state == BROKEN) {
+      door_semaphore.signal();
+      work_semaphore.signal();
+      return;
+    }
   }
+  direction = MyButton::TARGET;
   emit changeState(END);
 
-  // work_semaphore.wait();
-  // work_count--;
-  // // if (work_count == 0)
-    door_semaphore.signal();
-  work_semaphore.signal();
+  emit changeState(OPEN);
+  waitPassenger();
+  emit changeState(CLOSE);
 
-  openDoor();
-  // emit changeState(OPEN);
-  // waitPassenger();
-  // emit changeState(CLOSE);
+  door_semaphore.signal();
+  work_semaphore.signal();
 }
 
 void Elevator::setupUi()
@@ -146,7 +181,13 @@ void Elevator::setupUi()
   close_door_button = new QPushButton(this);
   close_door_button->setObjectName("CloseDoor");
   close_door_button->setGeometry(QRect(5 + 65, (total_floor + 3) / 2 * 30 + 5, 60, 25));
-  close_door_button->setText("关门"); // 关门
+  close_door_button->setText("关门");
+
+  alarm_button = new QPushButton(this);
+  alarm_button->setObjectName("AlarmButton");
+  alarm_button->setGeometry(QRect(5, (total_floor + 5) / 2 * 30 + 5, 125, 25));
+  alarm_button->setText("报修");
+  alarm_button->setStyleSheet("background: #fcc;");
 
   stateLabel = new QLabel(this);
   stateLabel->setObjectName("stateLabel");

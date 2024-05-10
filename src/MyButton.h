@@ -28,7 +28,7 @@ public:
   }
 
   signals:
-  void newTarget(int floor);
+  void newTarget(int floor, Direction dir = TARGET);
 
 public slots:
   void onClick()

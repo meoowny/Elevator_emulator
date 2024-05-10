@@ -2,6 +2,7 @@ add_rules("mode.debug", "mode.release")
 
 target("osLab1")
     add_rules("qt.widgetapp")
+    set_optimize("fastest")
     add_headerfiles("src/*.h")
     add_files("src/*.cpp")
     add_files("src/mainwindow.ui")

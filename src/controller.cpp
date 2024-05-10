@@ -1,5 +1,4 @@
 #include "controller.h"
-#include "qwidget.h"
 #include <string>
 
 Controller::Controller(QWidget *parent, int floor, int total_elevator)
@@ -23,6 +22,11 @@ Controller::~Controller()
   delete[] labels;
 }
 
+void Controller::newTarget(int floor, MyButton::Direction dir)
+{
+  elevators[1]->onNewTarget(floor);
+}
+
 void Controller::setupUi()
 {
   if (objectName().isEmpty())
@@ -38,7 +42,7 @@ void Controller::setupUi()
   buttons = new MyButton* [2 * total_floor];
   int base_x = 135 * total_elevator + 10;
   for (int i = 0; i < 2 * total_floor; i++) {
-    buttons[i] = new MyButton(this, i + 1, i % 2 ? MyButton::UP : MyButton::DOWN);
+    buttons[i] = new MyButton(this, i / 2 + 1, i % 2 ? MyButton::UP : MyButton::DOWN);
     buttons[i]->setObjectName("Button" + std::to_string(i / 2) + (i % 2 ? "UP" : "DOWN"));
     buttons[i]->setGeometry(QRect(base_x + i % 4 * (30 + 20) - (i / 2 % 2) * 10, i / 4 * (25 + 10) + 5, 30, 25));
     buttons[i]->setText(i % 2 ? "/\\" : "\\/");
@@ -56,6 +60,9 @@ void Controller::setupUi()
 
   for (int i = 0; i < total_elevator; i++) {
     QObject::connect(this, &QWidget::destroyed, elevators[i], &QWidget::deleteLater);
+  }
+  for (int i = 0; i < total_floor * 2; i++) {
+    QObject::connect(buttons[i], &MyButton::newTarget, this, &Controller::newTarget);
   }
 }
 

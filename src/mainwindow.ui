@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>173</width>
-    <height>183</height>
+    <width>180</width>
+    <height>180</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,8 +19,8 @@
      <rect>
       <x>40</x>
       <y>10</y>
-      <width>101</width>
-      <height>22</height>
+      <width>100</width>
+      <height>20</height>
      </rect>
     </property>
     <property name="suffix">
@@ -44,8 +44,8 @@
      <rect>
       <x>40</x>
       <y>50</y>
-      <width>101</width>
-      <height>22</height>
+      <width>100</width>
+      <height>20</height>
      </rect>
     </property>
     <property name="toolTip">
@@ -72,8 +72,8 @@
      <rect>
       <x>50</x>
       <y>90</y>
-      <width>81</width>
-      <height>23</height>
+      <width>80</width>
+      <height>25</height>
      </rect>
     </property>
     <property name="text">
@@ -86,7 +86,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>173</width>
+     <width>180</width>
      <height>22</height>
     </rect>
    </property>
