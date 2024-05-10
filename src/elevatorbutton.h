@@ -26,14 +26,18 @@ public:
       } "));
   }
 
+  bool getStatus() const { return waiting; }
+
   signals:
   void newTarget(int floor, Direction dir = TARGET);
 
 public slots:
   void onClick()
   {
-    lightupOnly();
-    emit newTarget(floor);
+    if (not waiting) {
+      lightupOnly();
+      emit newTarget(floor);
+    }
   }
 
   void onArrive(int f)

@@ -44,6 +44,10 @@ void Elevator::onNewTarget(int floor)
   if (state == BROKEN)
     return;
   // TODO: 单电梯调度
+  if (floor == current_floor and state == OPENED) {
+    emit arrive(floor);
+    return;
+  }
   buttons[floor - 1]->lightupOnly();
   std::thread(&Elevator::moveTo, this, floor)
     .detach();
@@ -73,6 +77,12 @@ void Elevator::on_AlarmButton_clicked()
   else {
     state = BROKEN;
     stateLabel->setStyleSheet("background: red;");
+    // 故障时清除当前电梯的所有目标楼层的按键显示
+    // 外部按键需要重新按
+    for (int i = 0; i < total_floor; i++) {
+      if (buttons[i]->getStatus())
+        arrive(i + 1);
+    }
   }
 }
 
