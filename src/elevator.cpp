@@ -115,7 +115,7 @@ void Elevator::onStateChange(TaskState st)
   else if (state == BROKEN) {
   }
   else {
-    throw "Expected branch";
+    throw "Unexpected branch";
   }
 }
 
