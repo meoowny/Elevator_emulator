@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../assets/res.qrc">
+    <normaloff>:/tju.png</normaloff>:/tju.png</iconset>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QSpinBox" name="elevatorSpinBox">
     <property name="geometry">
@@ -102,6 +106,8 @@
   <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="../assets/res.qrc"/>
+ </resources>
  <connections/>
 </ui>

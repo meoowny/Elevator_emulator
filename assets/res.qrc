@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/">
+    <file>tju.png</file>
+  </qresource>
+</RCC>

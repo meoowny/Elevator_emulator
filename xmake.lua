@@ -11,6 +11,7 @@ target("osLab1")
     add_files("src/controller.h")
     add_files("src/elevator.h")
     add_files("src/elevatorbutton.h")
+    add_files("assets/res.qrc")
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
