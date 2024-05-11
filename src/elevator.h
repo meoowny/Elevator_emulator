@@ -58,6 +58,7 @@ private:
   void openDoor();
   void step(bool isUp);
   void waitPassenger();
+  void nextFloor();
 
   std::vector<ElevatorButton*> buttons;
   QPushButton *open_door_button;

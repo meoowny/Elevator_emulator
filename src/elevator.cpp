@@ -156,6 +156,19 @@ void Elevator::moveTo(int floor)
 
   door_semaphore.signal();
   work_semaphore.signal();
+
+  // nextFloor();
+}
+
+void Elevator::nextFloor()
+{
+  // TODO: 单电梯调度
+  for (int i = 0; i < total_floor; i++) {
+    if (buttons[i]->isWaiting()) {
+      onNewTarget(i + 1);
+      break;
+    }
+  }
 }
 
 // 电梯开门模拟函数，用于新建线程
@@ -198,11 +211,12 @@ void Elevator::setupUi()
     setObjectName("Elevator" + std::to_string(id));
   this->resize(135, (total_floor / 2 + 4) * 30 - 5);
 
+  int base_y = (total_floor + 2) / 2 * 30 + 5;
   buttons.resize(total_floor);
   for (int i = 0; i < total_floor; i++) {
     buttons[i] = new ElevatorButton(this, i + 1);
     buttons[i]->setObjectName("Button" + std::to_string(i));
-    buttons[i]->setGeometry(QRect(i % 2 * 65 + 5, (i + 2) / 2 * 30 + 5, 60, 25));
+    buttons[i]->setGeometry(QRect(i % 2 * 65 + 5, base_y - ((i + 2) / 2 * 30), 60, 25));
     buttons[i]->setText(QCoreApplication::translate(
       objectName().toStdString().c_str(),
       std::to_string(i + 1).c_str(),
