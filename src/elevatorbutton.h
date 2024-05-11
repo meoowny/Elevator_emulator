@@ -26,7 +26,7 @@ public:
       } "));
   }
 
-  bool getStatus() const { return waiting; }
+  bool isWaiting() const { return waiting; }
 
   signals:
   void newTarget(int floor, Direction dir = TARGET);
@@ -55,8 +55,8 @@ public slots:
   }
 
 private:
-  int floor;
-  Direction dir;
+  const int floor;
+  const Direction dir;
   bool waiting;
 };
 

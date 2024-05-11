@@ -67,6 +67,9 @@ void Controller::setupUi()
   if (objectName().isEmpty())
     setObjectName("MainController");
   resize(140 * (total_elevator + 1) - 5 + 40, (total_floor / 2 + 4) * 30 - 5);
+  QIcon icon;
+  icon.addFile(QString::fromUtf8(":/tju.png"), QSize(), QIcon::Normal, QIcon::Off);
+  setWindowIcon(icon);
 
   elevators = new Elevator* [total_elevator];
   for (int i = 0; i < total_elevator; i++) {

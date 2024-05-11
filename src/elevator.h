@@ -40,8 +40,8 @@ public slots:
 
 private:
   const int id;
-  std::atomic<State> state;
   const int total_floor;
+  std::atomic<State> state;
   std::atomic<int> current_floor;
   std::atomic<int> waiting_target;
   std::atomic<ElevatorButton::Direction> direction;
@@ -59,7 +59,7 @@ private:
   void step(bool isUp);
   void waitPassenger();
 
-  ElevatorButton **buttons;
+  std::vector<ElevatorButton*> buttons;
   QPushButton *open_door_button;
   QPushButton *close_door_button;
   QPushButton *alarm_button;

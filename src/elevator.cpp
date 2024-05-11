@@ -27,7 +27,6 @@ Elevator::~Elevator()
 {
   for (int i = 0; i < total_floor; i++)
     delete buttons[i];
-  delete[] buttons;
   delete open_door_button;
   delete alarm_button;
   delete lcdNumber;
@@ -80,14 +79,16 @@ void Elevator::on_AlarmButton_clicked()
     // 故障时清除当前电梯的所有目标楼层的按键显示
     // 外部按键需要重新按
     for (int i = 0; i < total_floor; i++) {
-      if (buttons[i]->getStatus())
+      if (buttons[i]->isWaiting()) {
         arrive(i + 1);
+      }
     }
   }
 }
 
 void Elevator::onStateChange(TaskState st)
 {
+  // TODO: waiting_target 逻辑修改
   if (st == START and state == WAITING) {
     state = RUNNING;
     stateLabel->setStyleSheet("background: orange;");
@@ -123,11 +124,13 @@ void Elevator::onStateChange(TaskState st)
  * 私有函数，用于实现电梯逻辑 *
  ******************************/
 
+// 电梯移动模拟函数，用于新建线程
 void Elevator::moveTo(int floor)
 {
   work_semaphore.wait();
   door_semaphore.wait();
 
+  // 逐楼层移动，中途遇到报修则释放信号量并终止
   emit changeState(START);
   bool isUp = floor > current_floor;
   direction = isUp ? ElevatorButton::UP : ElevatorButton::DOWN;
@@ -143,8 +146,10 @@ void Elevator::moveTo(int floor)
   direction = ElevatorButton::TARGET;
   emit changeState(END);
 
+  // 移动到目标楼层后向按钮发送状态更新的信号
   emit arrive(floor);
 
+  // 到达目标楼层后开门一段时间等待乘客
   emit changeState(OPEN);
   waitPassenger();
   emit changeState(CLOSE);
@@ -153,6 +158,17 @@ void Elevator::moveTo(int floor)
   work_semaphore.signal();
 }
 
+// 电梯开门模拟函数，用于新建线程
+void Elevator::openDoor()
+{
+  door_semaphore.wait();
+  emit changeState(OPEN);
+  waitPassenger();
+  emit changeState(CLOSE);
+  door_semaphore.signal();
+}
+
+// 用于模拟电梯的单层移动
 void Elevator::step(bool isUp)
 {
   // 休眠 0.7 秒模拟电梯在楼层间的移动
@@ -164,20 +180,12 @@ void Elevator::step(bool isUp)
   lcdNumber->display(current_floor);
 }
 
+// 用于模拟开门等待乘客
 void Elevator::waitPassenger()
 {
-  // 若中途收到关门指令，则结束阻塞状态，否则阻塞两秒作为等待
+  // 若中途收到关门指令，则结束阻塞状态，否则阻塞两秒作为等待模拟
   if (door_mutex.try_lock_for(2s))
     return;
-}
-
-void Elevator::openDoor()
-{
-  door_semaphore.wait();
-  emit changeState(OPEN);
-  waitPassenger();
-  emit changeState(CLOSE);
-  door_semaphore.signal();
 }
 
 /***********************
@@ -190,7 +198,7 @@ void Elevator::setupUi()
     setObjectName("Elevator" + std::to_string(id));
   this->resize(135, (total_floor / 2 + 4) * 30 - 5);
 
-  buttons = new ElevatorButton* [total_floor];
+  buttons.resize(total_floor);
   for (int i = 0; i < total_floor; i++) {
     buttons[i] = new ElevatorButton(this, i + 1);
     buttons[i]->setObjectName("Button" + std::to_string(i));
