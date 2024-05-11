@@ -69,7 +69,7 @@ void Controller::setupUi()
 
   if (objectName().isEmpty())
     setObjectName("MainController");
-  resize(140 * (total_elevator + 1) - 5 + 35, std::max((total_floor / 2 + 4) * 30 - 5, base_y + 25 + 10));
+  resize(135 * total_elevator + 5 + 80 * 2 + 10 + 20, std::max((total_floor / 2 + 4) * 30 - 5, base_y + 25 + 10));
   QIcon icon;
   icon.addFile(QString::fromUtf8(":/tju.png"), QSize(), QIcon::Normal, QIcon::Off);
   setWindowIcon(icon);
@@ -86,6 +86,8 @@ void Controller::setupUi()
     buttons[i]->setObjectName("Button" + std::to_string(i / 2) + (i % 2 ? "UP" : "DOWN"));
     buttons[i]->setGeometry(QRect(base_x + i % 4 * (30 + 20) - (i / 2 % 2) * 10, base_y - (i / 4 * (25 + 10)), 30, 25));
     buttons[i]->setText(i % 2 ? "/\\" : "\\/");
+    if (i == 0 or i == 2 * total_floor - 1)
+      buttons[i]->setEnabled(false);
   }
 
   labels = new QLabel* [total_floor];

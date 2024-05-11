@@ -14,7 +14,6 @@ Elevator::Elevator(QWidget *parent, int floor, int id)
   , state(WAITING)
   , waiting_target(0)
   , id(id)
-  , work_semaphore(Semaphore(1))
   , door_semaphore(Semaphore(1))
   , direction(ElevatorButton::TARGET)
 {
@@ -42,14 +41,16 @@ void Elevator::onNewTarget(int floor)
 {
   if (state == BROKEN)
     return;
-  // TODO: 单电梯调度
   if (floor == current_floor and state == OPENED) {
     emit arrive(floor);
     return;
   }
   buttons[floor - 1]->lightupOnly();
-  std::thread(&Elevator::moveTo, this, floor)
-    .detach();
+  // 若此时电梯在运行，则跳过，会在到达任一目标楼层后在调度中被执行
+  if (work_mutex.try_lock()) {
+    std::thread(&Elevator::moveTo, this, floor)
+      .detach();
+  }
 }
 
 void Elevator::on_OpenDoor_clicked()
@@ -76,19 +77,18 @@ void Elevator::on_AlarmButton_clicked()
   else {
     state = BROKEN;
     stateLabel->setStyleSheet("background: red;");
-    // 故障时清除当前电梯的所有目标楼层的按键显示
-    // 外部按键需要重新按
-    for (int i = 0; i < total_floor; i++) {
-      if (buttons[i]->isWaiting()) {
-        arrive(i + 1);
-      }
+  }
+  // 故障时清除当前电梯的所有目标楼层的按键显示
+  // 外部按键需要重新按
+  for (int i = 0; i < total_floor; i++) {
+    if (buttons[i]->isWaiting()) {
+      arrive(i + 1);
     }
   }
 }
 
 void Elevator::onStateChange(TaskState st)
 {
-  // TODO: waiting_target 逻辑修改
   if (st == START and state == WAITING) {
     state = RUNNING;
     stateLabel->setStyleSheet("background: orange;");
@@ -127,7 +127,6 @@ void Elevator::onStateChange(TaskState st)
 // 电梯移动模拟函数，用于新建线程
 void Elevator::moveTo(int floor)
 {
-  work_semaphore.wait();
   door_semaphore.wait();
 
   // 逐楼层移动，中途遇到报修则释放信号量并终止
@@ -137,11 +136,17 @@ void Elevator::moveTo(int floor)
   for (int i = current_floor; isUp and i < floor or not isUp and i > floor;) {
     if (state == BROKEN) {
       door_semaphore.signal();
-      work_semaphore.signal();
+      work_mutex.unlock();
       return;
     }
     step(isUp);
     i += isUp ? 1 : -1;
+
+    // 若当前层有在等电梯，则直接开门并将当前层作为目标层
+    if (buttons[i - 1]->isWaiting()) {
+      floor = i;
+      break;
+    }
   }
   direction = ElevatorButton::TARGET;
   emit changeState(END);
@@ -155,9 +160,9 @@ void Elevator::moveTo(int floor)
   emit changeState(CLOSE);
 
   door_semaphore.signal();
-  work_semaphore.signal();
+  work_mutex.unlock();
 
-  // nextFloor();
+  nextFloor();
 }
 
 void Elevator::nextFloor()
@@ -179,6 +184,8 @@ void Elevator::openDoor()
   waitPassenger();
   emit changeState(CLOSE);
   door_semaphore.signal();
+
+  nextFloor();
 }
 
 // 用于模拟电梯的单层移动
