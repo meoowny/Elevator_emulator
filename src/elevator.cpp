@@ -171,7 +171,7 @@ void Elevator::nextFloor()
   for (int i = 0; i < total_floor; i++) {
     if (buttons[i]->isWaiting()) {
       onNewTarget(i + 1);
-      break;
+      return;
     }
   }
 }
@@ -216,9 +216,10 @@ void Elevator::setupUi()
 {
   if (objectName().isEmpty())
     setObjectName("Elevator" + std::to_string(id));
-  this->resize(135, (total_floor / 2 + 4) * 30 - 5);
+  this->resize(135, ((total_floor + 1) / 2 + 5) * 30 - 5);
 
-  int base_y = (total_floor + 2) / 2 * 30 + 5;
+  // TODO: 奇数楼层显示 bug
+  int base_y = (total_floor + 3) / 2 * 30 + 5;
   buttons.resize(total_floor);
   for (int i = 0; i < total_floor; i++) {
     buttons[i] = new ElevatorButton(this, i + 1);

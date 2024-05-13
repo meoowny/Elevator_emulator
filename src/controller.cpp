@@ -65,11 +65,11 @@ void Controller::newTarget(int floor, ElevatorButton::Direction dir)
 void Controller::setupUi()
 {
   int base_x = 135 * total_elevator + 15;
-  int base_y = total_floor / 2 * (25 + 10) - 25;
+  int base_y = (total_floor + 1) / 2 * (25 + 10) - 25;
 
   if (objectName().isEmpty())
     setObjectName("MainController");
-  resize(135 * total_elevator + 5 + 80 * 2 + 10 + 20, std::max((total_floor / 2 + 4) * 30 - 5, base_y + 25 + 10));
+  resize(135 * total_elevator + 5 + 80 * 2 + 10 + 20, std::max(((total_floor + 1) / 2 + 4) * 30 - 5, base_y + 25 + 10));
   QIcon icon;
   icon.addFile(QString::fromUtf8(":/tju.png"), QSize(), QIcon::Normal, QIcon::Off);
   setWindowIcon(icon);
