@@ -35,14 +35,18 @@ void Controller::newTarget(int floor, ElevatorButton::Direction dir)
   for (int i = 0; i < total_elevator; i++) {
     if (elevators[i]->getState() == Elevator::BROKEN)
       continue;
+    else if (elevators[i]->inWaitingList(floor))
+      return;
 
     int distance = std::abs(elevators[i]->getCurrentFloor() - floor);
+    // 同向或空闲
     if ((elevators[i]->getDirections() == dir
       or elevators[i]->getDirections() == ElevatorButton::TARGET)
       and distance < min_distance) {
       target_elevator = i;
       min_distance = distance;
     }
+    // 反向
     else if (elevators[i]->getDirections() != dir
       and elevators[i]->getDirections() != ElevatorButton::TARGET
       and distance < candidate_min_distance) {

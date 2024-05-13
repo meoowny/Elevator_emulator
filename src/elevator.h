@@ -25,6 +25,7 @@ public:
   int getCurrentFloor() const { return current_floor; }
   ElevatorButton::Direction getDirections() const { return direction; }
   State getState() const { return state; }
+  bool inWaitingList(int floor) const { return buttons[floor-1]->isWaiting(); }
 
   signals:
   // 该信号槽用于线程间沟通

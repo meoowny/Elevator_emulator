@@ -148,7 +148,7 @@ void Elevator::moveTo(int floor)
       break;
     }
   }
-  direction = ElevatorButton::TARGET;
+  // direction = ElevatorButton::TARGET;
   emit changeState(END);
 
   // 移动到目标楼层后向按钮发送状态更新的信号
@@ -168,9 +168,31 @@ void Elevator::moveTo(int floor)
 void Elevator::nextFloor()
 {
   // TODO: 单电梯调度
-  for (int i = 0; i < total_floor; i++) {
-    if (buttons[i]->isWaiting()) {
-      onNewTarget(i + 1);
+  for (int up = current_floor, down = current_floor; up <= total_floor or down > 0; up++, down--) {
+    // if (buttons[i]->isWaiting()) {
+    //   onNewTarget(i + 1);
+    //   return;
+    // }
+    if (direction == ElevatorButton::DOWN
+      and down > 0
+      and buttons[down - 1]->isWaiting()) {
+      onNewTarget(down);
+      return;
+    }
+    else if (direction == ElevatorButton::UP
+      and up <= total_floor
+      and buttons[up - 1]->isWaiting()) {
+      onNewTarget(up);
+      return;
+    }
+    else if (down > 0
+      and buttons[down - 1]->isWaiting()) {
+      onNewTarget(down);
+      return;
+    }
+    else if (up <= total_floor
+      and buttons[up - 1]->isWaiting()) {
+      onNewTarget(up);
       return;
     }
   }
