@@ -1,5 +1,4 @@
 #include "elevator.h"
-#include "qobject.h"
 
 using namespace std::chrono_literals;
 
@@ -165,9 +164,10 @@ void Elevator::moveTo(int floor)
   nextFloor();
 }
 
+// 当前任务结束后，寻找下一个目标楼层
 void Elevator::nextFloor()
 {
-  // TODO: 单电梯调度
+  // 单电梯调度逻辑，首先选择当前方向的目标楼层，确保不会出现饥饿问题
   for (int up = current_floor, down = current_floor; up <= total_floor or down > 0; up++, down--) {
     // if (buttons[i]->isWaiting()) {
     //   onNewTarget(i + 1);
@@ -185,7 +185,9 @@ void Elevator::nextFloor()
       onNewTarget(up);
       return;
     }
-    else if (down > 0
+  }
+  for (int up = current_floor, down = current_floor; up <= total_floor or down > 0; up++, down--) {
+    if (down > 0
       and buttons[down - 1]->isWaiting()) {
       onNewTarget(down);
       return;
@@ -196,6 +198,8 @@ void Elevator::nextFloor()
       return;
     }
   }
+  // 无未处理楼层时，置电梯运行方向为 TARGET，即无方向
+  direction = ElevatorButton::TARGET;
 }
 
 // 电梯开门模拟函数，用于新建线程

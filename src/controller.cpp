@@ -1,5 +1,4 @@
 #include "controller.h"
-#include "qobject.h"
 #include <algorithm>
 #include <string>
 
@@ -55,6 +54,7 @@ void Controller::newTarget(int floor, ElevatorButton::Direction dir)
     }
   }
 
+  // 首选同向或空闲的电梯
   if (target_elevator != -1) {
     elevators[target_elevator]->onNewTarget(floor);
   }
@@ -90,6 +90,7 @@ void Controller::setupUi()
     buttons[i]->setObjectName("Button" + std::to_string(i / 2) + (i % 2 ? "UP" : "DOWN"));
     buttons[i]->setGeometry(QRect(base_x + i % 4 * (30 + 20) - (i / 2 % 2) * 10, base_y - (i / 4 * (25 + 10)), 30, 25));
     buttons[i]->setText(i % 2 ? "/\\" : "\\/");
+    // 禁用顶楼和一楼的部分按键
     if (i == 0 or i == 2 * total_floor - 1)
       buttons[i]->setEnabled(false);
   }
