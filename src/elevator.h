@@ -47,11 +47,12 @@ private:
   std::atomic<int> waiting_target;
   std::atomic<ElevatorButton::Direction> direction;
 
+  // std::mutex door_mutex;
   Semaphore door_semaphore;
   std::mutex work_mutex;
-  std::timed_mutex door_mutex; // 用于开门关门
+  std::timed_mutex open_door; // 用于开门关门
                                // 初始化时锁上，使用 try_lock_for
-                               // 需要关门时解锁 door_mutex 即可
+                               // 需要关门时解锁 open_door 即可
 
   void setupUi();
 

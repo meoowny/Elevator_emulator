@@ -18,7 +18,7 @@ Elevator::Elevator(QWidget *parent, int floor, int id)
 {
   setupUi();
   setAttribute(Qt::WA_DeleteOnClose);
-  door_mutex.lock();
+  open_door.lock();
 }
 
 Elevator::~Elevator()
@@ -64,7 +64,7 @@ void Elevator::on_CloseDoor_clicked()
 {
   if (state == BROKEN or state != OPENED)
     return;
-  door_mutex.unlock();
+  open_door.unlock();
 }
 
 void Elevator::on_AlarmButton_clicked()
@@ -72,10 +72,12 @@ void Elevator::on_AlarmButton_clicked()
   if (state == BROKEN) {
     state = WAITING;
     stateLabel->setStyleSheet("background: grey;");
+    stateLabel->setText(" -");
   }
   else {
     state = BROKEN;
     stateLabel->setStyleSheet("background: red;");
+    stateLabel->setText(" -");
   }
   // 故障时清除当前电梯的所有目标楼层的按键显示
   // 外部按键需要重新按
@@ -91,6 +93,10 @@ void Elevator::onStateChange(TaskState st)
   if (st == START and state == WAITING) {
     state = RUNNING;
     stateLabel->setStyleSheet("background: orange;");
+    if (direction == ElevatorButton::UP)
+      stateLabel->setText(" \xe4\xb8\x8a"); // 上
+    else if (direction == ElevatorButton::DOWN)
+      stateLabel->setText(" \xe4\xb8\x8b"); // 下
   }
   else if (st == START and state == RUNNING) {
     waiting_target++;
@@ -99,6 +105,7 @@ void Elevator::onStateChange(TaskState st)
     if (waiting_target == 0) {
       state = WAITING;
       stateLabel->setStyleSheet("background: grey;");
+      stateLabel->setText(" -");
     }
     else {
       waiting_target--;
@@ -107,10 +114,12 @@ void Elevator::onStateChange(TaskState st)
   else if (st == OPEN and state == WAITING) {
     state = OPENED;
     stateLabel->setStyleSheet("background: green;");
+    stateLabel->setText(" -");
   }
   else if (st == CLOSE and state == OPENED) {
     state = WAITING;
     stateLabel->setStyleSheet("background: grey;");
+    stateLabel->setText(" -");
   }
   else if (state == BROKEN) {
   }
@@ -128,7 +137,7 @@ void Elevator::moveTo(int floor)
 {
   door_semaphore.wait();
 
-  // 逐楼层移动，中途遇到报修则释放信号量并终止
+  // 逐楼层移动，中途遇到报警则释放信号量并终止
   emit changeState(START);
   bool isUp = floor > current_floor;
   direction = isUp ? ElevatorButton::UP : ElevatorButton::DOWN;
@@ -147,12 +156,16 @@ void Elevator::moveTo(int floor)
       break;
     }
   }
-  // direction = ElevatorButton::TARGET;
   emit changeState(END);
 
   // 移动到目标楼层后向按钮发送状态更新的信号
   emit arrive(floor);
 
+  if (state == BROKEN) {
+    door_semaphore.wait();
+    work_mutex.unlock();
+    return;
+  }
   // 到达目标楼层后开门一段时间等待乘客
   emit changeState(OPEN);
   waitPassenger();
@@ -169,10 +182,6 @@ void Elevator::nextFloor()
 {
   // 单电梯调度逻辑，首先选择当前方向的目标楼层，确保不会出现饥饿问题
   for (int up = current_floor, down = current_floor; up <= total_floor or down > 0; up++, down--) {
-    // if (buttons[i]->isWaiting()) {
-    //   onNewTarget(i + 1);
-    //   return;
-    // }
     if (direction == ElevatorButton::DOWN
       and down > 0
       and buttons[down - 1]->isWaiting()) {
@@ -230,7 +239,7 @@ void Elevator::step(bool isUp)
 void Elevator::waitPassenger()
 {
   // 若中途收到关门指令，则结束阻塞状态，否则阻塞两秒作为等待模拟
-  if (door_mutex.try_lock_for(2s))
+  if (open_door.try_lock_for(2s))
     return;
 }
 
@@ -277,11 +286,12 @@ void Elevator::setupUi()
   alarm_button = new QPushButton(this);
   alarm_button->setObjectName("AlarmButton");
   alarm_button->setGeometry(QRect(5, (total_floor + 5) / 2 * 30 + 5, 125, 25));
-  alarm_button->setText("报修");
+  alarm_button->setText("报警");
   alarm_button->setStyleSheet("background: #fcc;");
 
   stateLabel = new QLabel(this);
   stateLabel->setObjectName("stateLabel");
+  stateLabel->setText(" -");
   stateLabel->setGeometry(QRect(5, 5, 125, 25));
   stateLabel->setStyleSheet("background: grey;");
 
