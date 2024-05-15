@@ -75,6 +75,8 @@ void Elevator::on_AlarmButton_clicked()
     stateLabel->setText(" -");
   }
   else {
+    if (state == OPENED)
+      open_door.unlock();
     state = BROKEN;
     stateLabel->setStyleSheet("background: red;");
     stateLabel->setText(" -");
@@ -182,6 +184,7 @@ void Elevator::nextFloor()
 {
   // 单电梯调度逻辑，首先选择当前方向的目标楼层，确保不会出现饥饿问题
   for (int up = current_floor, down = current_floor; up <= total_floor or down > 0; up++, down--) {
+    // 首先查看当前运行方向上是否有未处理任务
     if (direction == ElevatorButton::DOWN
       and down > 0
       and buttons[down - 1]->isWaiting()) {
@@ -196,6 +199,7 @@ void Elevator::nextFloor()
     }
   }
   for (int up = current_floor, down = current_floor; up <= total_floor or down > 0; up++, down--) {
+    // 当前运行方向上无未处理任务时，查看其余方向上是否有未处理任务
     if (down > 0
       and buttons[down - 1]->isWaiting()) {
       onNewTarget(down);
@@ -207,7 +211,7 @@ void Elevator::nextFloor()
       return;
     }
   }
-  // 无未处理楼层时，置电梯运行方向为 TARGET，即无方向
+  // 所有任务均处理完时，置电梯运行方向为 TARGET，即无方向，处于空闲状态
   direction = ElevatorButton::TARGET;
 }
 

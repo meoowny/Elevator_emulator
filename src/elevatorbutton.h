@@ -29,7 +29,7 @@ public:
   bool isWaiting() const { return waiting; }
 
   signals:
-  void newTarget(int floor, Direction dir = TARGET);
+  void newTarget(int floor, Direction dir = TARGET); // 给电梯发送新的任务请求
 
 public slots:
   void onClick()
@@ -57,7 +57,7 @@ public slots:
 private:
   const int floor;
   const Direction dir;
-  bool waiting;
+  std::atomic<bool> waiting;
 };
 
 #endif // MY_BUTTON_H

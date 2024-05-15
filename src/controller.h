@@ -17,11 +17,11 @@ public slots:
   void newTarget(int floor, ElevatorButton::Direction dir);
 
 private:
-  int total_floor;
-  int total_elevator;
+  const int total_floor;
+  const int total_elevator;
 
   Elevator **elevators;
-  ElevatorButton **buttons;
+  ElevatorButton **buttons; // 电梯外按键
   QLabel **labels;
 
   void setupUi();

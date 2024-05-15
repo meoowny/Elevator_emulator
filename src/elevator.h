@@ -47,7 +47,6 @@ private:
   std::atomic<int> waiting_target;
   std::atomic<ElevatorButton::Direction> direction;
 
-  // std::mutex door_mutex;
   Semaphore door_semaphore;
   std::mutex work_mutex;
   std::timed_mutex open_door; // 用于开门关门

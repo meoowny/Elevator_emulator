@@ -26,27 +26,36 @@ Controller::~Controller()
 void Controller::newTarget(int floor, ElevatorButton::Direction dir)
 {
   // 一个简单的多电梯调度实现
-  // TODO: 改进算法
   int target_elevator = -1;
   int min_distance = total_floor + 2;
   int candidate_elevator = -1;
   int candidate_min_distance = total_floor + 2;
   for (int i = 0; i < total_elevator; i++) {
+    // 电梯损坏则跳过，目标楼层已处于等待状态则结束查找
     if (elevators[i]->getState() == Elevator::BROKEN)
       continue;
     else if (elevators[i]->inWaitingList(floor))
       return;
 
-    int distance = std::abs(elevators[i]->getCurrentFloor() - floor);
+    int distance = elevators[i]->getCurrentFloor() - floor;
+    ElevatorButton::Direction demandDirection;
+    if (distance > 0) {
+      demandDirection = ElevatorButton::DOWN;
+    }
+    else {
+      demandDirection = ElevatorButton::UP;
+      distance = -distance;
+    }
+
     // 同向或空闲
-    if ((elevators[i]->getDirections() == dir
+    if ((elevators[i]->getDirections() == demandDirection
       or elevators[i]->getDirections() == ElevatorButton::TARGET)
       and distance < min_distance) {
       target_elevator = i;
       min_distance = distance;
     }
     // 反向
-    else if (elevators[i]->getDirections() != dir
+    else if (elevators[i]->getDirections() != demandDirection
       and elevators[i]->getDirections() != ElevatorButton::TARGET
       and distance < candidate_min_distance) {
       candidate_elevator = i;
