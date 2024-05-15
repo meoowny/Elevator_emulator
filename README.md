@@ -63,11 +63,11 @@
 
 # 运行展示
 
-![程序初始界面](./screenshots\startup.png)
+![程序初始界面](./screenshots/startup.png)
 
-![系统初始状态](./screenshots\screenshots_01.png)
+![系统初始状态](./screenshots/screenshots_01.png)
 
-![所有电梯正常运行时](./screenshots\screenshots_02.png)
+![所有电梯正常运行时](./screenshots/screenshots_02.png)
 
-![部分电梯损坏时](./screenshots\screenshots_03.png)
+![部分电梯损坏时](./screenshots/screenshots_03.png)
 
